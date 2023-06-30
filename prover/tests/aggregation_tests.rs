@@ -29,6 +29,7 @@ fn test_aggregation_api() {
     let mut output_path = PathBuf::from_str(&output_dir).unwrap();
     log::info!("created output dir {}", output_dir);
 
+    // 加载执行轨迹
     let block_traces = load_block_traces_for_test().1;
     log::info!("loaded block trace");
 
@@ -44,6 +45,16 @@ fn test_aggregation_api() {
     //
     // 1. instantiation the parameters and the prover
     //
+    // ================================================== ====
+    // 整个聚合过程需要以下步骤
+    // 1. 实例化参数和证明者
+    // 2. 从以前的转储文件中读取或将块跟踪转换为内部电路证明（又名 SNARK）
+    // 3. 构建聚合电路证明
+    // 4. 为evm生成字节码以验证聚合电路证明
+    // 5. 使用evm字节码验证证明
+    // ================================================== ====
+    //
+    //  1. 实例化参数和证明者
 
     let params = load_or_download_params(PARAMS_DIR, *AGG_DEGREE).unwrap();
     let mut prover = Prover::from_params(params);
@@ -53,6 +64,7 @@ fn test_aggregation_api() {
     // 2. read inner circuit proofs (a.k.a. SNARKs) from previous dumped file or
     //    convert block traces into
     //
+    // 2. 从以前的转储文件中读取或将块跟踪转换为内部电路证明（又名 SNARK）
     let inner_proof_file_path = format!("{}/{}_snark.json", output_dir, SuperCircuit::name());
     let inner_proof = load_snark(&inner_proof_file_path)
         .unwrap()
@@ -71,6 +83,7 @@ fn test_aggregation_api() {
     // sanity check: the inner proof is correct
 
     // 3. build an aggregation circuit proof
+    // 3. 构建聚合电路证明
     let agg_circuit = AggregationCircuit::new(
         &prover.agg_params,
         vec![inner_proof.clone()],
@@ -85,6 +98,7 @@ fn test_aggregation_api() {
     log::info!("finished aggregation generation");
 
     // 4. generate bytecode for evm to verify aggregation circuit proof
+    // 4. 为evm生成字节码以验证聚合电路证明
     let agg_vk = prover.agg_pk.as_ref().unwrap().get_vk();
 
     // Create bytecode and dump yul-code.
@@ -98,6 +112,7 @@ fn test_aggregation_api() {
     log::info!("finished byte code generation");
 
     // 5. validate the proof with evm bytecode
+    // 5. 使用evm字节码验证证明
     EvmVerifier::new(deployment_code).verify(agg_circuit.instances(), chunk_proof.proof);
     log::info!("end to end test completed");
 }

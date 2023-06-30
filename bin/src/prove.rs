@@ -29,8 +29,10 @@ fn main() {
     let agg_params = load_or_download_params(&args.params_path, *AGG_DEGREE)
         .expect("failed to load or create params");
 
+    // 通过设置参数初始化prover
     let mut prover = Prover::from_params(agg_params);
 
+    // 从文件中加载轨迹信息
     let mut traces = Vec::new();
     let trace_path = PathBuf::from(&args.trace_path);
     if trace_path.is_dir() {
@@ -48,6 +50,7 @@ fn main() {
 
     let mut proof_dir = PathBuf::from("proof_data");
 
+    // 调用prover.gen_chunk_proof生成chunk proof
     let now = Instant::now();
     let chunk_proof = prover
         .gen_chunk_proof(traces.as_slice())

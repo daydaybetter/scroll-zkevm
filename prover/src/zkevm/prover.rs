@@ -61,21 +61,27 @@ impl Prover {
 
     // Generate the chunk proof given the chunk trace using Poseidon hash for challenges.
     // The returned proof is expected to be verified by only rust verifier not solidity verifier.
+    // 使用 Poseidon 哈希生成给定块跟踪的块证明以进行挑战。
+    // 返回的证明预计仅由 Rust 验证器验证，而不由 Solidity 验证器验证。
     pub fn gen_chunk_proof(&mut self, chunk_trace: &[BlockTrace]) -> anyhow::Result<Proof> {
         let inner_proof = self.gen_inner_proof::<SuperCircuit>(chunk_trace)?;
         // compress the inner proof using the aggregation proof
+        // 使用聚合证明压缩内部证明
         self.gen_agg_proof(vec![inner_proof])
     }
 
     // Generate the chunk proof given the chunk trace using Keccak hash for challenges.
     // The returned proof can be efficiently verified by solidity verifier.
+    // 使用 Keccak 哈希生成给定块跟踪的块证明以进行挑战。返回的证明可以被可靠验证器有效地验证。
     pub fn gen_chunk_evm_proof(&mut self, chunk_trace: &[BlockTrace]) -> anyhow::Result<Proof> {
         let inner_proof = self.gen_inner_proof::<SuperCircuit>(chunk_trace)?;
         // compress the inner proof using the aggregation proof
+        // 使用聚合证明压缩内部证明
         self.gen_agg_evm_proof(vec![inner_proof])
     }
 
     // Generate the proof of the inner circuit
+    // 生成内部电路的证明
     pub fn gen_inner_proof<C: TargetCircuit>(
         &mut self,
         chunk_trace: &[BlockTrace],
@@ -88,6 +94,7 @@ impl Prover {
 
         let (circuit, instance) = {
             // will return early if the check finds out the trace exceeds the circuit capacity
+            // 如果检查发现走线超出电路容量则提前返回
             check_batch_capacity(&mut block_traces)?;
 
             let witness_block = block_traces_to_witness_block(&block_traces)?;
@@ -100,6 +107,7 @@ impl Prover {
         };
 
         // generate the proof for the inner circuit
+        // 生成内部电路的证明
         info!(
             "Create {} proof of block {} ... block {}, batch len {}",
             C::name(),
@@ -130,14 +138,17 @@ impl Prover {
         let pk = &self.target_circuit_pks[&C::name()];
 
         // Generate the SNARK proof for the inner circuit
+        // 生成内部电路的 SNARK 证明
         let snark_proof =
             gen_snark_shplonk(&self.zkevm_params, pk, circuit, &mut rng, None::<String>);
         Ok(snark_proof)
     }
 
     // Generate the aggregation proof given the proofs of inner circuit
+    // 给定内部电路证明生成聚合证明
     pub fn gen_agg_proof(&mut self, snarks: Vec<Snark>) -> anyhow::Result<Proof> {
         // build the aggregation circuit inputs from the inner circuit outputs
+        // 从内部电路输出构建聚合电路输入
         let seed = [0u8; 16];
         let mut rng = XorShiftRng::from_seed(seed);
 
@@ -158,8 +169,10 @@ impl Prover {
     }
 
     // Generate the aggregation evm proof given the proofs of inner circuit
+    // 根据内部电路的证明生成聚合 evm 证明
     pub fn gen_agg_evm_proof(&mut self, snarks: Vec<Snark>) -> anyhow::Result<Proof> {
         // build the aggregation circuit inputs from the inner circuit outputs
+        // 从内部电路输出构建聚合电路输入
         let seed = [0u8; 16];
         let mut rng = XorShiftRng::from_seed(seed);
 
@@ -187,6 +200,7 @@ impl Prover {
     }
 
     // Initiates the public key for a given inner circuit.
+    // 启动给定内部电路的公钥。
     pub(crate) fn gen_inner_pk<C: TargetCircuit>(&mut self, circuit: &<C as TargetCircuit>::Inner) {
         Self::tick(&format!("before init pk of {}", C::name()));
         let pk = keygen_pk2(&self.zkevm_params, circuit)

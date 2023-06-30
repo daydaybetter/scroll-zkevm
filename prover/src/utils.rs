@@ -30,6 +30,7 @@ pub const GIT_VERSION: &str = git_version!();
 pub static LOGGER: Once = Once::new();
 
 /// Get setup params by reading from a file or downloading a new one.
+/// 通过读取文件或下载新文件来获取设置参数。
 pub fn load_or_download_params(params_dir: &str, degree: usize) -> Result<ParamsKZG<Bn256>> {
     match metadata(params_dir) {
         Ok(md) => {

@@ -54,6 +54,8 @@ pub fn calculate_row_usage_of_witness_block(
 
 // FIXME: we need better API name for this.
 // This function also mutates the block trace.
+// FIXME: 为此我们需要更好的 API 名称。
+// 该函数还会改变块跟踪。
 pub fn check_batch_capacity(block_traces: &mut Vec<BlockTrace>) -> Result<(), anyhow::Error> {
     let block_traces_len = block_traces.len();
     let total_tx_count = block_traces
